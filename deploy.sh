@@ -1,19 +1,38 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
-# Usage: ./deploy.sh ec2-user ec2-ip docker-image /path/to/key.pem
-EC2_USER=${1:?}
-EC2_HOST=${2:?}
-IMAGE=${3:?}          # e.g. youruser/dev-repo:latest
-KEY=${4:-~/.ssh/id_rsa}
+EC2_USER="ec2-user"
+EC2_HOST="100.26.138.166"
+IMAGE_REMOTE="aravinthdevops/dev-repo:latest"
+KEY_FILE=${1:-}
 
-echo "Deploying $IMAGE to $EC2_USER@$EC2_HOST ..."
+if [ -z "$KEY_FILE" ]; then
+    echo "Usage: ./deploy.sh <key-file>"
+    echo "Example: ./deploy.sh ~/.ssh/mykey.pem"
+    exit 1
+fi
 
-ssh -o StrictHostKeyChecking=no -i "$KEY" "$EC2_USER@$EC2_HOST" bash -s <<EOF
-set -e
-docker pull $IMAGE
-docker rm -f myapp || true
-docker run -d --name myapp -p 80:80 --restart always $IMAGE
+PASS=${DOCKERHUB_PASS:-}
+if [ -z "$PASS" ]; then
+    echo "❌ ERROR: Set DOCKERHUB_PASS environment variable."
+    exit 1
+fi
+
+echo "🚀 Deploying $IMAGE_REMOTE to $EC2_HOST..."
+
+ssh -i "$KEY_FILE" -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" bash <<EOF
+    set -e
+    echo "🔑 Logging into Docker Hub..."
+    echo "$PASS" | docker login -u "aravinthdevops" --password-stdin
+
+    echo "📥 Pulling latest image..."
+    docker pull "$IMAGE_REMOTE"
+
+    echo "🛑 Stopping old container (if exists)..."
+    docker rm -f app-container || true
+
+    echo "▶️ Running new container..."
+    docker run -d --name app-container -p 80:80 "$IMAGE_REMOTE"
+
+    echo "✅ Deployment complete!"
 EOF
-
-echo "Deployment done."
