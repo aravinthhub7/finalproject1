@@ -1,25 +1,19 @@
 #!/bin/bash
-set -e
+set -e  # Exit on error
+
+IMAGE_NAME="aravinthdevops/prod-repo"
+TAG="latest"
 
 echo "Building Docker image..."
+docker build -t $IMAGE_NAME:$TAG .
 
-if [ -z "$DOCKERHUB_USER" ] || [ -z "$DOCKERHUB_PASS" ]; then
-  echo "ERROR: Docker Hub credentials not provided."
-  exit 1
-fi
+echo "Tagging image..."
+docker tag $IMAGE_NAME:$TAG $IMAGE_NAME:$TAG
 
-# Login to Docker Hub
-echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+echo "Logging into Docker Hub..."
+echo $DOCKERHUB_PASS | docker login -u $DOCKERHUB_USER --password-stdin
 
-# Build image depending on branch
-if [ "$BRANCH_NAME" = "dev" ]; then
-    IMAGE_TAG="dev:latest"
-elif [ "$BRANCH_NAME" = "master" ]; then
-    IMAGE_TAG="prod:latest"
-else
-    IMAGE_TAG="test:latest"
-fi
+echo "Pushing image to Docker Hub..."
+docker push $IMAGE_NAME:$TAG
 
-docker build -t $DOCKERHUB_USER/finalproject1:$IMAGE_TAG .
-
-echo "Image built: $DOCKERHUB_USER/finalproject1:$IMAGE_TAG"
+echo "Build & push completed!"
