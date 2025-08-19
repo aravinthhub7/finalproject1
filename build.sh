@@ -1,22 +1,25 @@
 #!/bin/bash
-set -euo pipefail
+set -e
 
-IMAGE_LOCAL="mini-project-2:latest"
-IMAGE_REMOTE="aravinthdevops/dev-repo:latest"
+echo "Building Docker image..."
 
-PASS=${DOCKERHUB_PASS:-}
-if [ -z "$PASS" ]; then
-    echo "❌ ERROR: Set DOCKERHUB_PASS environment variable."
-    exit 1
+if [ -z "$DOCKERHUB_USER" ] || [ -z "$DOCKERHUB_PASS" ]; then
+  echo "ERROR: Docker Hub credentials not provided."
+  exit 1
 fi
 
-echo "🔑 Logging into Docker Hub..."
-echo "$PASS" | docker login -u "aravinthdevops" --password-stdin
+# Login to Docker Hub
+echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
 
-echo "🏷️ Tagging image..."
-docker tag "$IMAGE_LOCAL" "$IMAGE_REMOTE"
+# Build image depending on branch
+if [ "$BRANCH_NAME" = "dev" ]; then
+    IMAGE_TAG="dev:latest"
+elif [ "$BRANCH_NAME" = "master" ]; then
+    IMAGE_TAG="prod:latest"
+else
+    IMAGE_TAG="test:latest"
+fi
 
-echo "📤 Pushing image to Docker Hub..."
-docker push "$IMAGE_REMOTE"
+docker build -t $DOCKERHUB_USER/finalproject1:$IMAGE_TAG .
 
-echo "✅ Build and push complete!"
+echo "Image built: $DOCKERHUB_USER/finalproject1:$IMAGE_TAG"
