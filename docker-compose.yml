@@ -1,8 +1,8 @@
 version: "3.8"
+
 services:
-  web:
-    build: .
-    image: ${IMAGE:user/dev-repo}:latest
+  app:
+    image: aravinthdevops/finalproject1:latest
     ports:
       - "80:80"
     restart: always
