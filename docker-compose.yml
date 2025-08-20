@@ -4,5 +4,5 @@ services:
   app:
     image: aravinthdevops/prod-repo:latest
     ports:
-      - "80:80"
+      - "5000:80"
     restart: always
